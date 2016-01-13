@@ -25,3 +25,13 @@ def signum(x):
     
 def threshold(x):
     print
+    
+#===============================================================================
+# getFunc: returns the function associated with the func_name provided
+#===============================================================================
+def getFunc(func_name):
+    functions = [sigmoid, hyperbolic_tang, nullFunc, signum, threshold]
+    for func in functions:
+        if func.__name__ == func_name:
+            return func
+    print "The requested function is not available."
