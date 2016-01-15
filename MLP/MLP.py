@@ -5,6 +5,7 @@ Created on 12 Dec 2015
 '''
 
 import activation
+import random
 
 #===============================================================================
 # MLP: Class representing a new MLP
@@ -21,7 +22,7 @@ class MLP:
         
     def addLayer(self):
         self.layers.append(Neuron_Layer())
-        print "A new layer was added to the MLP."
+        # print "A new layer was added to the MLP."
         
     def readParam(self, file_name):
         print file_name
@@ -34,18 +35,22 @@ class MLP:
 #===============================================================================
 class Neuron_Layer:
     
+    noNeurons = 0
+    
     def __init__(self):
         self.neurons = [] # stores each Neuron within the layer (also used to find width)
         
     def addNeuron(self, toAdd):
         self.neurons.append(toAdd)
-        print "Added a new Neuron to the layer"
+        self.noNeurons += 1
+        # print "Added a new Neuron to the layer"
+        
+    def applyBias(self, bias):
+        for node in self.neurons:
+            node.weights.insert(0, bias)
         
     def printLayer(self):
         print self.neurons, len(self.neurons) 
-        
-    def __str__(self):
-        return "Neuron_Layer"
     
     def __repr__(self):
         return "Neuron_Layer"
@@ -58,23 +63,31 @@ class Neuron:
     def __init__(self):
         self.weights = [] # stores the weight value of each incoming connection
         
-    def init_weights(self):
-        print
+    #===========================================================================
+    # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
+    #===========================================================================
+    def init_weights(self, lower_bound, upper_bound):
+        for weight in self.weights:
+            weight = random.randint(lower_bound, upper_bound)
         
     def assignActivation(self, func_name):
         self.function = activation.getFunc(func_name)
         
     def printNeuron(self):
         print "The activation function of the Neuron is:", self.function.__name__
-        
-    def __str__(self):
-        return "Neuron string rep"
     
     def __repr__(self):
-        return "Neuron string rep"
+        return "Neuron string representation"
     
 #===============================================================================
 # back_propagate: train the network using back propagation
+# note:
+# the input to each node is: 
+#     the summation of, the output of the previous layer * weight
+#     the output is ordered from the first node to the last of the previous layer
+#     the weights are ordered in the same way
+#     note that the bias is the first input
+#     the activation function is attached uniquely to each node
 #===============================================================================
 def back_propagate(learning_rate, momentum_factor):
     
@@ -104,6 +117,10 @@ def main():
     print n1
     n1.assignActivation("sigmoid")
     n1.printNeuron()
+    
+    n2 = Neuron()
+    n2.assignActivation("nullFunc")
+    n2.printNeuron()
     
     nl1 = Neuron_Layer()
     print nl1
