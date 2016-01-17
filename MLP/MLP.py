@@ -22,9 +22,8 @@ class MLP:
         self.layers = []
         MLP.noMLPs += 1
         
-    #===========================================================================
+
     # addLayer: insert a new layer to the MLP, the new layer becomes the last element in the list
-    #===========================================================================
     def addLayer(self):
         self.layers.append(Neuron_Layer(self.noLayers))
         self.noLayers += 1
@@ -36,6 +35,7 @@ class MLP:
     def getInfo(self):
         print ("The MLP consists of " + str(len(self.layers)) + " layers"), self.layers
            
+    # feed_forward_online: online learning (example-by-example training)
     def feed_forward_online(self, input_ex):
         if self.layers[0] != len(input_ex):
             raise Exception("The number of inputs and nodes (in the input layer) must be equal")
@@ -56,17 +56,13 @@ class MLP:
         for layer_index in range(len(self.layers), 0, -1): # iterate from the outer-layer backwards
             print layer_index
             
-    #===========================================================================
     # calc_error_at_outputs: error at the output layer (treated independently)
     # note that the layer index is consistently, length_of_list - 1
-    #===========================================================================
     def calc_error_at_outputs(self, target_output, actual_output):
         return (target_output - actual_output) * actual_output * (1 - actual_output)
            
-    #===========================================================================
     # calc_error: error at hidden/input layers
-    #     weighted_sum: the weighted sum of node errors that receive a connection from the current node
-    #===========================================================================
+    # weighted_sum: the weighted sum of node errors that receive a connection from the current node
     def calc_error(self, layer_index, activation_output):
         from_node_connections = self.layers[layer_index + 1].neurons # connected to all nodes of next layer (feed-forward)
         
@@ -89,9 +85,7 @@ class Neuron_Layer:
         self.noNeurons += 1
         # print "Added a new Neuron to the layer"
         
-    #===========================================================================
     # applyBias: the bias is weighted by 1, universally across the layer
-    #===========================================================================
     def applyBias(self, bias):
         for node in self.neurons:
             node.weights.insert(0, 1)
@@ -112,9 +106,7 @@ class Neuron:
         self.function = activation.nullFunc() # null function by default
         self.node_output = 0 # store the output for use in training
         
-    #===========================================================================
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
-    #===========================================================================
     def init_weights(self, lower_bound, upper_bound):
         if lower_bound >= -5 and upper_bound <= 5:
             for i in range(len(self.weights)):
@@ -122,6 +114,7 @@ class Neuron:
         else:
             raise Exception("The boundaries are constrained between -5 and 5")
         
+    # assignActivation: each node can be assigned an activation function at the user's discretion
     def assignActivation(self, func_name):
         self.function = activation.getFunc(func_name)
         
@@ -129,6 +122,7 @@ class Neuron:
         print ("The activation function of the", self.name, "is:", self.function.__name__ +
                "The weights of each input connection are:", self.weights)
         
+    # get_out_from_in: process the weighted sum of each input via the activation function
     def get_out_from_in(self, node_inputs):
         weighted_sum = 0
         for i in range(len(node_inputs)): # weights and inputs must have matching order
@@ -138,9 +132,6 @@ class Neuron:
     def __repr__(self):
         return "Neuron string representation"
         
-#===============================================================================
-# main: program called from here
-#===============================================================================
 def main():
     print "In the main method of MLP:"
     
