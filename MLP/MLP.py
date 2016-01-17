@@ -36,12 +36,11 @@ class MLP:
     def getInfo(self):
         print ("The MLP consists of " + str(len(self.layers)) + " layers"), self.layers
            
-    def feed_forward(self, inputs):
-        if self.layers[0] != len(inputs):
+    def feed_forward_online(self, input_ex):
+        if self.layers[0] != len(input_ex):
             raise Exception("The number of inputs and nodes (in the input layer) must be equal")
         else:
-            
-        
+            print
         
     #===============================================================================
     # back_propagate: train the network using back propagation
@@ -110,6 +109,8 @@ class Neuron:
     
     def __init__(self, name):
         self.weights = [] # stores the weight value of each incoming connection
+        self.function = activation.nullFunc() # null function by default
+        self.node_output = 0 # store the output for use in training
         
     #===========================================================================
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -127,6 +128,12 @@ class Neuron:
     def printNeuron(self):
         print ("The activation function of the", self.name, "is:", self.function.__name__ +
                "The weights of each input connection are:", self.weights)
+        
+    def get_out_from_in(self, node_inputs):
+        weighted_sum = 0
+        for i in range(len(node_inputs)): # weights and inputs must have matching order
+            weighted_sum += self.weights[i] * node_inputs[i]
+        self.node_output = self.function(weighted_sum) # output is the activation function applied to the weighted sum
     
     def __repr__(self):
         return "Neuron string representation"
