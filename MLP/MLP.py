@@ -20,8 +20,7 @@ class MLP:
         # self.readParam(file_name)
         self.noLayers = 0
         self.layers = []
-        MLP.noMLPs += 1
-        
+        MLP.noMLPs += 1   
 
     # addLayer: insert a new layer to the MLP, the new layer becomes the last element in the list
     def addLayer(self):
@@ -40,7 +39,12 @@ class MLP:
         if self.layers[0] != len(input_ex):
             raise Exception("The number of inputs and nodes (in the input layer) must be equal")
         else:
-            print
+            self.layers[0].feed_forward(input_ex) # first layer receives direct input (input layer)
+            for layer_index in range(1, len(self.layers)): # iterate through remaining layers (hidden + output)
+                next_input_ex = [] 
+                for node in self.layers[layer_index - 1].neurons: # reference the node output
+                    next_input_ex.append(node.node_out)
+                self.layers[layer_index].feed_forward(next_input_ex)       
         
     #===============================================================================
     # back_propagate: train the network using back propagation
@@ -55,20 +59,6 @@ class MLP:
     def back_propagate(self, learning_rate, momentum_factor):
         for layer_index in range(len(self.layers), 0, -1): # iterate from the outer-layer backwards
             print layer_index
-            
-    # calc_error_at_outputs: error at the output layer (treated independently)
-    # note that the layer index is consistently, length_of_list - 1
-    def calc_error_at_outputs(self, target_output, actual_output):
-        return (target_output - actual_output) * actual_output * (1 - actual_output)
-           
-    # calc_error: error at hidden/input layers
-    # weighted_sum: the weighted sum of node errors that receive a connection from the current node
-    def calc_error(self, layer_index, activation_output):
-        from_node_connections = self.layers[layer_index + 1].neurons # connected to all nodes of next layer (feed-forward)
-        
-        weighted_sum = 0
-        for node in from_node_connections:
-            print weighted_sum
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
@@ -89,12 +79,44 @@ class Neuron_Layer:
     def applyBias(self, bias):
         for node in self.neurons:
             node.weights.insert(0, 1)
+            
+    def feed_forward(self, node_inputs):
+        for node in self.neurons: # same inputs processed by each node in the layer
+            node.get_out_from_in(node_inputs)
         
     def printLayer(self):
         print self.neurons, len(self.neurons) 
+        
+    # calc_error: error at hidden/input layers
+    # weighted_sum: the weighted sum of node errors that receive a connection from the current node
+    def calc_error(self, layer_index, activation_output):
+        connected_nodes = self.layers[layer_index + 1].neurons # nodes of next layer
+        weighted_sum = 0
+        for i in range(len(self.neurons)): # index of each node in the layer
+            for node in connected_nodes: # nodes of next layer (reference the weight value of each connection)
+                weighted_sum += node.weights[i] * node.out_error            
     
     def __repr__(self):
         return "Neuron_Layer string representation"
+    
+#===============================================================================
+# Output_Layer: all networks have exactly one output layer, error calculation treated independently of the other layers
+#===============================================================================
+class Output_Layer(Neuron_Layer):
+    
+    def __init__(self, exp_out):
+        Neuron_Layer.__init__(self, "Output")
+        self.exp_out = exp_out # store expected outputs
+        self.act_out = [] # record actual outputs
+     
+    # @override    
+    # calc_error: error at the output layer (treated independently)
+    # note that the layer index is consistently, length_of_list - 1
+    def calc_error(self):
+        for i in range(len(self.neurons)):
+            current_act = self.act_out[i]
+            current_exp = self.exp_out[i]
+            self.act_out.append((current_exp - current_act) * current_act * (1 - current_act))
         
 #===============================================================================
 # Neuron: Represents an individual Neuron
@@ -104,7 +126,8 @@ class Neuron:
     def __init__(self, name):
         self.weights = [] # stores the weight value of each incoming connection
         self.function = activation.nullFunc() # null function by default
-        self.node_output = 0 # store the output for use in training
+        self.node_out = None # store the output for use in training
+        self.out_error = None # the error at the output
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
     def init_weights(self, lower_bound, upper_bound):
@@ -127,7 +150,7 @@ class Neuron:
         weighted_sum = 0
         for i in range(len(node_inputs)): # weights and inputs must have matching order
             weighted_sum += self.weights[i] * node_inputs[i]
-        self.node_output = self.function(weighted_sum) # output is the activation function applied to the weighted sum
+        self.node_out = self.function(weighted_sum) # output is the activation function applied to the weighted sum
     
     def __repr__(self):
         return "Neuron string representation"
