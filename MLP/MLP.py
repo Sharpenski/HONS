@@ -94,7 +94,7 @@ class Neuron_Layer:
         weighted_sum = 0
         for i in range(len(self.neurons)): # index of each node in the layer
             for node in connected_nodes: # nodes of next layer (reference the weight value of each connection)
-                weighted_sum += node.weights[i] * node.out_error            
+                weighted_sum += node.weights[i] * node.out_error # weights[i] references the 'i'th node of the connecting layer           
     
     def __repr__(self):
         return "Neuron_Layer string representation"
