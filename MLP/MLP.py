@@ -18,18 +18,23 @@ class MLP:
     
     def __init__(self, file_name):
         # self.readParam(file_name)
-        self.noLayers = 0
         self.layers = []
         MLP.noMLPs += 1   
 
     # addLayer: insert a new layer to the MLP, the new layer becomes the last element in the list
     def addLayer(self):
-        self.layers.append(Neuron_Layer(self.noLayers))
-        self.noLayers += 1
+        self.layers.append(Neuron_Layer(len(self.layers)))
         print "A new layer was added to the MLP."
         
     def readParam(self, file_name):
         print file_name
+    
+    # returns the layer associated with an index    
+    def getLayer(self, index):
+        if len(self.layers) > index:
+            return self.layers[index]
+        else:
+            raise Exception("The index is not present within the list of layers")
         
     def getInfo(self):
         print ("The MLP consists of " + str(len(self.layers)) + " layers"), self.layers
@@ -46,27 +51,18 @@ class MLP:
                     next_input_ex.append(node.node_out)
                 self.layers[layer_index].feed_forward(next_input_ex)       
         
-    #===============================================================================
-    # back_propagate: train the network using back propagation
-    # note:
-    # the input to each node is: 
-    #     the summation of, the output of the previous layer * weight
-    #     the output is ordered from the first node to the last of the previous layer
-    #     the weights are ordered in the same way
-    #     note that the bias is the first input
-    #     the activation function is attached uniquely to each node
-    #===============================================================================
-    def back_propagate(self, learning_rate, momentum_factor):
-        for layer_index in range(len(self.layers), 0, -1): # iterate from the outer-layer backwards
-            print layer_index
+    def calc_errors(self, learning_rate, momentum_factor):
+        self.layers[-1].calc_error()
+        for i in range(len(self.layers)-2, 0, -1): # iterate from the penultimate layer backwards
+            self.layers[i].calc_error(i)
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
 #===============================================================================
 class Neuron_Layer:
     
-    def __init__(self, name):
-        self.name = name
+    def __init__(self, index):
+        self.index = index # the input layer will have index 1, the output layer will have index (length - 1)
         self.neurons = [] # stores each Neuron within the layer (also used to find width)
         self.noNeurons = 0
         
@@ -89,12 +85,20 @@ class Neuron_Layer:
         
     # calc_error: error at hidden/input layers
     # weighted_sum: the weighted sum of node errors that receive a connection from the current node
-    def calc_error(self, layer_index, activation_output):
-        connected_nodes = self.layers[layer_index + 1].neurons # nodes of next layer
+    def calc_error(self):
+        connected_nodes = MLP.getLayer(self, self.index+1) # nodes of next layer
         weighted_sum = 0
-        for i in range(len(self.neurons)): # index of each node in the layer
+        for i in range(len(self.neurons)): # index of each node in the current layer
+            current_node = self.neurons[i] # references the current node of the current layer
             for node in connected_nodes: # nodes of next layer (reference the weight value of each connection)
-                weighted_sum += node.weights[i] * node.out_error # weights[i] references the 'i'th node of the connecting layer           
+                weighted_sum += node.weights[i] * node.out_error # weights[i] references the 'i'th node of the connecting layer
+            current_node.out_error = weighted_sum  * current_node.node_out * (current_node.node_out - 1) 
+            
+    # update weights: update the weight values in accordance with back propagation rules   
+    def upd_weights(self, learning_rate, momentum_factor):
+        for i range(len(self.neurons)): # 'i' references the receiving node
+             for j in range(len(self.neurons[i].weights)): # 'j' references the connecting node
+                 
     
     def __repr__(self):
         return "Neuron_Layer string representation"
@@ -124,9 +128,8 @@ class Output_Layer(Neuron_Layer):
 class Neuron:
     
     def __init__(self, name):
-        self.weights = [] # stores the weight value of each incoming connection
+        self.weights = self.init_weights(-1, 1) # stores the weight value of each incoming connection
         self.function = activation.nullFunc() # null function by default
-        self.node_out = None # store the output for use in training
         self.out_error = None # the error at the output
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -136,7 +139,7 @@ class Neuron:
                 self.weights[i] = random.uniform(lower_bound, upper_bound)
         else:
             raise Exception("The boundaries are constrained between -5 and 5")
-        
+    
     # assignActivation: each node can be assigned an activation function at the user's discretion
     def assignActivation(self, func_name):
         self.function = activation.getFunc(func_name)
