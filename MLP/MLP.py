@@ -14,12 +14,9 @@ import random
 #===============================================================================
 class MLP:
     
-    noMLPs = 0
-    
     def __init__(self, file_name):
         # self.readParam(file_name)
-        self.layers = []
-        MLP.noMLPs += 1   
+        self.layers = []  
 
     # addLayer: insert a new layer to the MLP, the new layer becomes the last element in the list
     def addLayer(self):
@@ -34,10 +31,7 @@ class MLP:
         if len(self.layers) > index:
             return self.layers[index]
         else:
-            raise Exception("The index is not present within the list of layers")
-        
-    def getInfo(self):
-        print ("The MLP consists of " + str(len(self.layers)) + " layers"), self.layers
+            raise Exception("The layer index is not valid")
            
     # feed_forward_online: online learning (example-by-example training)
     def feed_forward_online(self, input_ex):
@@ -54,7 +48,7 @@ class MLP:
     def calc_errors(self, learning_rate, momentum_factor):
         self.layers[-1].calc_error()
         for i in range(len(self.layers)-2, 0, -1): # iterate from the penultimate layer backwards
-            self.layers[i].calc_error(i)
+            self.layers[i].calc_error(self.getLayer(i+1))
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
@@ -85,8 +79,8 @@ class Neuron_Layer:
         
     # calc_error: error at hidden/input layers
     # weighted_sum: the weighted sum of node errors that receive a connection from the current node
-    def calc_error(self):
-        connected_nodes = MLP().getLayer(self.index+1) # nodes of next layer
+    def calc_error(self, next_layer):
+        connected_nodes = next_layer.neurons # nodes of next layer
         weighted_sum = 0
         for i in range(len(self.neurons)): # index of each node in the current layer
             current_node = self.neurons[i] # references the current node of the current layer
