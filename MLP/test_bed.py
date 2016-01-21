@@ -32,4 +32,5 @@ print y.x
 print Test.g
 Test().sayHello()
 y.sayHello()
-print y.name
+y.h = 100000
+print y.name, y.h

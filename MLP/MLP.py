@@ -86,7 +86,7 @@ class Neuron_Layer:
     # calc_error: error at hidden/input layers
     # weighted_sum: the weighted sum of node errors that receive a connection from the current node
     def calc_error(self):
-        connected_nodes = MLP.getLayer(self, self.index+1) # nodes of next layer
+        connected_nodes = MLP().getLayer(self.index+1) # nodes of next layer
         weighted_sum = 0
         for i in range(len(self.neurons)): # index of each node in the current layer
             current_node = self.neurons[i] # references the current node of the current layer
@@ -95,11 +95,12 @@ class Neuron_Layer:
             current_node.out_error = weighted_sum  * current_node.node_out * (current_node.node_out - 1) 
             
     # update weights: update the weight values in accordance with back propagation rules   
-    def upd_weights(self, learning_rate, momentum_factor):
-        for i range(len(self.neurons)): # 'i' references the receiving node
-             for j in range(len(self.neurons[i].weights)): # 'j' references the connecting node
-                 
-    
+    def upd_weights(self, learning_rate, momentum_fact):
+        connecting_layer = MLP().getLayer(self.index - 1).neurons # the connecting layer
+        for neuron in self.neurons: # 'i' references the receiving node
+            for i in range(len(connecting_layer)): # 'j' references the connecting node
+                neuron.weights[i] = ((learning_rate * neuron.out_error * connecting_layer[i].node_out) +
+                                      (momentum_fact * neuron.weights[i]))
     def __repr__(self):
         return "Neuron_Layer string representation"
     
@@ -130,7 +131,6 @@ class Neuron:
     def __init__(self, name):
         self.weights = self.init_weights(-1, 1) # stores the weight value of each incoming connection
         self.function = activation.nullFunc() # null function by default
-        self.out_error = None # the error at the output
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
     def init_weights(self, lower_bound, upper_bound):
@@ -143,10 +143,6 @@ class Neuron:
     # assignActivation: each node can be assigned an activation function at the user's discretion
     def assignActivation(self, func_name):
         self.function = activation.getFunc(func_name)
-        
-    def printNeuron(self):
-        print ("The activation function of the", self.name, "is:", self.function.__name__ +
-               "The weights of each input connection are:", self.weights)
         
     # get_out_from_in: process the weighted sum of each input via the activation function
     def get_out_from_in(self, node_inputs):
@@ -165,7 +161,8 @@ def main():
     mlp1.addLayer()
     mlp1.addLayer() 
     mlp1.addLayer()
-    mlp1.back_propagate(0.05, 0.01)
+    print mlp1.layers[1].index
+    print mlp1.getLayer(2)
     
 if __name__ == "__main__":
     main()
