@@ -10,21 +10,21 @@ import random
 #===============================================================================
 # MLP: Class representing a new MLP
 # user-defined number of layers
-# read required parameters in via a text file
+# predefined input-output mapping (supervised learning)
 #===============================================================================
 class MLP:
     
-    def __init__(self, file_name):
-        # self.readParam(file_name)
+    def __init__(self, ins, outs):
+        self.ins = ins 
+        self.outs = outs
         self.layers = []  
+        self.noLayers = 0
 
     # addLayer: insert a new layer to the MLP, the new layer becomes the last element in the list
-    def addLayer(self):
-        self.layers.append(Neuron_Layer(len(self.layers)))
+    def addLayer(self, width):
+        self.layers.append(Neuron_Layer(self.noLayers, width))
+        self.noLayers += 1
         print "A new layer was added to the MLP."
-        
-    def readParam(self, file_name):
-        print file_name
     
     # returns the layer associated with an index    
     def getLayer(self, index):
@@ -34,35 +34,48 @@ class MLP:
             raise Exception("The layer index is not valid")
            
     # feed_forward_online: online learning (example-by-example training)
-    def feed_forward_online(self, input_ex):
-        if self.layers[0] != len(input_ex):
-            raise Exception("The number of inputs and nodes (in the input layer) must be equal")
-        else:
-            self.layers[0].feed_forward(input_ex) # first layer receives direct input (input layer)
-            for layer_index in range(1, len(self.layers)): # iterate through remaining layers (hidden + output)
-                next_input_ex = [] 
-                for node in self.layers[layer_index - 1].neurons: # reference the node output
-                    next_input_ex.append(node.node_out)
-                self.layers[layer_index].feed_forward(next_input_ex)       
+    def feed_forward(self, input_ex):
+        self.layers[0].feed_forward(input_ex) # first layer receives direct input (input layer)
+        for layer_index in range(1, len(self.layers)): # iterate through remaining layers (hidden + output)
+            next_input_ex = [] 
+            for node in self.layers[layer_index - 1].neurons: # reference the node output
+                next_input_ex.append(node.node_out)
+            self.layers[layer_index].feed_forward(next_input_ex)       
         
     def calc_errors(self, learning_rate, momentum_factor):
-        self.layers[-1].calc_error()
-        for i in range(len(self.layers)-2, 0, -1): # iterate from the penultimate layer backwards
+        self.layers[-1].calc_error() # calculate the initial error at the output layer
+        for i in range(len(self.layers)-2, 0, -1): # iterate from the pen-ultimate layer backwards
             self.layers[i].calc_error(self.getLayer(i+1))
+            
+    def update_synapses(self, learn_rate, mom_fact):
+        for i in range(1, len(self.layers)):
+            self.layers[i].upd_weights(learn_rate, mom_fact, self.layers[i-1])
+            
+    def train_network_online(self, learn_rate, mom_fact):
+        if self.layers[0].noNeurons != len(self.ins):
+            raise Exception("The number of inputs and nodes (in the input layer) must be equal")
+        else:
+            for net_in in self.ins:
+                self.feed_forward(net_in) # feed input through the network
+                self.calc_errors(learn_rate, mom_fact) # calculate the error, start at output layer and back-propagate
+                self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error            
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
 #===============================================================================
 class Neuron_Layer:
     
-    def __init__(self, index):
-        self.index = index # the input layer will have index 1, the output layer will have index (length - 1)
-        self.neurons = [] # stores each Neuron within the layer (also used to find width)
+    def __init__(self, index, width):
         self.noNeurons = 0
+        self.index = index # the input layer will have index 1, the output layer will have index (length - 1)
+        self.neurons = self.addNeurons(width) # stores each Neuron within the layer (also used to find width)
         
-    def addNeuron(self):
-        self.neurons.append(Neuron(self.noNeurons))
-        self.noNeurons += 1
+    def addNeurons(self, width):
+        neuron_array = []
+        while self.noNeurons < width:
+            neuron_array.append(Neuron(self.noNeurons))
+            self.noNeurons += 1
+        return neuron_array
         
     # applyBias: the bias is weighted by 1, universally across the layer
     def applyBias(self, bias):
@@ -85,11 +98,11 @@ class Neuron_Layer:
             current_node.out_error = weighted_sum  * current_node.node_out * (current_node.node_out - 1) 
             
     # update weights: update the weight values in accordance with back propagation rules (training)
-    def upd_weights(self, learning_rate, momentum_fact, prev_layer):
+    def upd_weights(self, learn_rate, mom_fact, prev_layer):
         connecting_layer = prev_layer.neurons # the connecting layer
         for neuron in self.neurons: # 'i' references the receiving node
             for i in range(len(connecting_layer)): # 'j' references the connecting node
-                neuron.deltas[i] = ((learning_rate * neuron.out_error * connecting_layer[i].node_out) + (momentum_fact * neuron.deltas[i])) # calculate the delta
+                neuron.deltas[i] = ((learn_rate * neuron.out_error * connecting_layer[i].node_out) + (mom_fact * neuron.deltas[i])) # calculate the delta
                 neuron.weights[i] += neuron.deltas[i]
                 
     def __repr__(self):
@@ -119,11 +132,11 @@ class Output_Layer(Neuron_Layer):
 #===============================================================================
 class Neuron:
     
-    def __init__(self, name, function, no_connections):
+    def __init__(self, no_connections):
         self.weights = [] * no_connections # stores the weight value of each incoming connection
-        self.init_weights(-1, 1)
         self.deltas = [0] * no_connections
-        self.function = self.assignActivation(function) # null function by default
+        self.init_weights(-1, 1)
+        self.function = self.assignActivation("sigmoid") # null function by default
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
     def init_weights(self, lower_bound, upper_bound):
@@ -150,11 +163,13 @@ class Neuron:
 def main():
     print "In the main method of MLP:"
     
-    mlp1 = MLP("test_file.txt")    
-    mlp1.addLayer()
-    mlp1.addLayer() 
-    mlp1.addLayer()
-    print mlp1.layers
+    ins = [0.1,0.2,0.3,0.4,0.5]
+    outs = [0.1,0.2,0.3,0.4,0.5] 
+    mlp1 = MLP(ins, outs) 
+    mlp1.addLayer(3) # hidden 1
+    mlp1.addLayer(3) # hidden 2
+    mlp1.addLayer(1) # output 
+    mlp1.train_network_online(0.01, 0.5)
     
 if __name__ == "__main__":
     main()

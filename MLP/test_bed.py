@@ -4,6 +4,8 @@ Created on 16 Jan 2016
 @author: tobydobbs
 '''
 
+import time
+
 weights = [0,2,3,4,1,5,4,3]
 
 print weights
@@ -34,3 +36,18 @@ Test().sayHello()
 y.sayHello()
 y.h = 100000
 print y.name, y.h
+
+def fibo_print():
+    array = [1, 1]
+    for x in range(2, 10):
+        array.append(array[x-1] + array[x-2])
+        time.sleep(0.3)
+        print array[x]
+        
+fibo_print()
+        
+
+employee = str(raw_input("HI?\n"))
+while employee:
+    print "Hello", employee
+    employee = str(raw_input())
