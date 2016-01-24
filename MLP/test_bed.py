@@ -6,48 +6,43 @@ Created on 16 Jan 2016
 
 import time
 
-weights = [0,2,3,4,1,5,4,3]
-
-print weights
-
-for i in range(len(weights)):
-    weights[i] = 0
-    
-print weights
-
-class Test:
-    
-    x = False
-    g = 0
-    
-    def __init__(self):
-        self.x = True
-        Test.g += 1
-        
-    def sayHello(self):
-        self.name = "Toby"
-        print Test.g
-        print "hello"
-    
-y = Test()
-print y.x
-print Test.g
-Test().sayHello()
-y.sayHello()
-y.h = 100000
-print y.name, y.h
+print "hello"
 
 def fibo_print():
-    array = [1, 1]
+    array = [0, 1]
     for x in range(2, 10):
         array.append(array[x-1] + array[x-2])
         time.sleep(0.3)
         print array[x]
         
-fibo_print()
-        
+#fibo_print()
 
-employee = str(raw_input("HI?\n"))
-while employee:
-    print "Hello", employee
-    employee = str(raw_input())
+def swap(list, a, b):
+    temp = list[a]
+    list[a] = list[b]
+    list[b] = temp
+    
+friends = ["Arthur", "Brain", "Buster", "Francine"]
+hier = [0] * 4
+relation = str(raw_input())
+while relation:
+    best = friends.index(relation.split()[0])
+    worst = friends.index(relation.split()[1])
+    hier[worst] = hier[best] + 1
+    if best > worst:
+        swap(friends, best, worst)
+        swap(hier, best, worst)
+    print friends
+    print hier
+    relation = str(raw_input())
+
+lowest = 0    
+for i in range(1, len(hier)):
+    if hier[i] > hier[lowest]:
+        lowest = i
+    
+print friends[lowest]
+    
+    
+
+
