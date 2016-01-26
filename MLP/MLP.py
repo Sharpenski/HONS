@@ -18,20 +18,17 @@ class MLP:
         self.ins = ins 
         self.outs = outs
         self.layers = []  
-        self.noLayers = 0
+        self.noLayers = 0 # includes the hidden layer
+        
+        self.insert_layers([4,4,1])
 
-    # addLayer: insert a new layer to the MLP, the new layer becomes the last element in the list
-    def addLayer(self, width):
-        self.layers.append(Neuron_Layer(self.noLayers, width))
-        self.noLayers += 1
-        print "A new layer was added to the MLP."
-    
-    # returns the layer associated with an index    
-    def getLayer(self, index):
-        if len(self.layers) > index:
-            return self.layers[index]
-        else:
-            raise Exception("The layer index is not valid")
+    # addLayer: insert layers, the new layer becomes the last element in the list
+    def insert_layers(self, layer_sizes):
+        self.layers.append(Neuron_Layer(self.noLayers, layer_sizes[0], len(self.ins)))
+        for layer_size in range(1, len(layer_sizes)):
+            self.layers.append(Neuron_Layer(self.noLayers, layer_size, self.layers[self.noLayers].noNeurons))
+            self.noLayers += 1
+            print "A new layer was added to the MLP."
            
     # feed_forward_online: online learning (example-by-example training)
     def feed_forward(self, input_ex):
@@ -45,27 +42,30 @@ class MLP:
     def calc_errors(self, learning_rate, momentum_factor):
         self.layers[-1].calc_error() # calculate the initial error at the output layer
         for i in range(len(self.layers)-2, 0, -1): # iterate from the pen-ultimate layer backwards
-            self.layers[i].calc_error(self.getLayer(i+1))
+            self.layers[i].calc_error(self.layers[i+1])
             
     def update_synapses(self, learn_rate, mom_fact):
         for i in range(1, len(self.layers)):
             self.layers[i].upd_weights(learn_rate, mom_fact, self.layers[i-1])
             
     def train_network_online(self, learn_rate, mom_fact):
-        if self.layers[0].noNeurons != len(self.ins):
-            raise Exception("The number of inputs and nodes (in the input layer) must be equal")
-        else:
-            for net_in in self.ins:
-                self.feed_forward(net_in) # feed input through the network
-                self.calc_errors(learn_rate, mom_fact) # calculate the error, start at output layer and back-propagate
-                self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error            
+        for net_in in self.ins:
+            self.feed_forward(net_in) # feed input through the network
+            self.calc_errors(learn_rate, mom_fact) # calculate the error, start at output layer and back-propagate
+            self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error   
+            
+    def __repr__(self):
+        return ("\nThe MLP consists of:\n" + 
+                str(len(self.ins)) + " inputs\n" +
+                str(len(self.outs)) + " outputs\n" +
+                str(self.noLayers) + " layers\n")
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
 #===============================================================================
 class Neuron_Layer:
     
-    def __init__(self, index, width):
+    def __init__(self, index, width, connections_per_node):
         self.noNeurons = 0
         self.index = index # the input layer will have index 1, the output layer will have index (length - 1)
         self.neurons = self.addNeurons(width) # stores each Neuron within the layer (also used to find width)
@@ -148,12 +148,13 @@ class Neuron:
     
     # assignActivation: each node can be assigned an activation function at the user's discretion
     def assignActivation(self, func_name):
-        self.function = activation.getFunc(func_name)
+        return activation.getFunc(func_name)
         
     # get_out_from_in: process the weighted sum of each input via the activation function
     def get_out_from_in(self, node_inputs):
         weighted_sum = 0
         for i in range(len(node_inputs)): # weights and inputs must have matching order
+            print len(self.weights), len(node_inputs)
             weighted_sum += self.weights[i] * node_inputs[i]
         self.node_out = self.function(weighted_sum) # output is the activation function applied to the weighted sum
     
@@ -163,12 +164,10 @@ class Neuron:
 def main():
     print "In the main method of MLP:"
     
-    ins = [0.1,0.2,0.3,0.4,0.5]
+    ins = [[0.1],[0.2],[0.3],[0.4],[0.5]]
     outs = [0.1,0.2,0.3,0.4,0.5] 
-    mlp1 = MLP(ins, outs) 
-    mlp1.addLayer(3) # hidden 1
-    mlp1.addLayer(3) # hidden 2
-    mlp1.addLayer(1) # output 
+    mlp1 = MLP(ins, outs)  
+    print mlp1
     mlp1.train_network_online(0.01, 0.5)
     
 if __name__ == "__main__":

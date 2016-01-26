@@ -49,10 +49,10 @@ class Hopfield:
         return activations
 
 def main():        
-    patterns = ["0010","0001", "0001"]
+    patterns = ["0000", "0000", "0000","0000","0000","1111"]
     hop = Hopfield(patterns)
-    print hop.pattern_recall(patterns[0])
-    print hop.pattern_recall("1110")
+    print hop.pattern_recall("1111")
+    print hop.pattern_recall("0000")
     
 if __name__ == "__main__":
     main()
