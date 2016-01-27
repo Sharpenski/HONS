@@ -20,7 +20,7 @@ class MLP:
         self.outs = outs
         self.layers = []  
         
-        self.insert_layers([4,4,1])
+        self.insert_layers([5,6,8,2,7,1])
 
     # addLayer: insert layers, the new layer becomes the last element in the list
     def insert_layers(self, layer_sizes):
@@ -31,11 +31,12 @@ class MLP:
             noLayers = len(self.layers)
             self.layers.append(Neuron_Layer(noLayers, layer_sizes[i], self.layers[noLayers-1].noNeurons))
             
-        self.layers.append(Output_Layer(len(self.layers), layer_sizes[-1], len(self.ins[-1]), self.outs)) # output layer
+        self.layers.append(Output_Layer(len(self.layers), layer_sizes[-1], self.layers[-1].noNeurons, self.outs)) # output layer
+        print "hahahshshshsh", self.layers[-1].neurons
            
     # feed_forward_online: online learning (example-by-example training)
     def feed_forward(self, input_ex):
-        
+           
         self.layers[0].feed_forward(input_ex) # first layer receives direct input (input layer)
         
         for layer_index in range(1, len(self.layers)): # iterate through remaining layers (hidden + output)
@@ -48,7 +49,7 @@ class MLP:
         
         self.layers[-1].calc_error() # calculate the initial error at the output layer
         
-        for i in range(len(self.layers)-2, 0, -1): # iterate from the pen-ultimate layer backwards
+        for i in range(len(self.layers)-2, -1, -1): # iterate from the pen-ultimate layer backwards
             self.layers[i].calc_error(self.layers[i+1])
             
     def update_synapses(self, learn_rate, mom_fact):
@@ -56,19 +57,22 @@ class MLP:
         for i in range(1, len(self.layers)):
             self.layers[i].upd_weights(learn_rate, mom_fact, self.layers[i-1])
             
+    #===========================================================================
+    # train_network_online: main method of the class regarding online learning
+    #===========================================================================
     def train_network_online(self, learn_rate, mom_fact):
         
         for net_in in self.ins:
             self.feed_forward(net_in) # feed input through the network
-            self.calc_errors(learn_rate, mom_fact) # calculate the error, start at output layer and back-propagate
-            self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error   
+        self.calc_errors(learn_rate, mom_fact) # calculate the error, start at output layer and back-propagate
+        self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error   
             
     def __repr__(self):
         
         return ("\nThe MLP consists of:\n" + 
                 str(len(self.ins)) + " inputs\n" +
                 str(len(self.outs)) + " outputs\n" +
-                str(self.noLayers) + " layers\n")
+                str(len(self.layers)) + " layers\n")
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
@@ -102,12 +106,15 @@ class Neuron_Layer:
         
         for node in self.neurons: # same inputs processed by each node in the layer
             node.get_out_from_in(node_inputs)
+            
+        print "Layer", str(self.index), str(self.neurons)
         
     # calc_error: error at hidden/input layers
     # weighted_sum: the weighted sum of node errors that receive a connection from the current node
     def calc_error(self, next_layer):
         
         connected_nodes = next_layer.neurons # nodes of next layer
+        print "hahahahahahshshhdjdhdhd", next_layer.neurons, "hdhdjdhdjshsuue", connected_nodes
         weighted_sum = 0
         
         for i in range(len(self.neurons)): # index of each node in the current layer
@@ -140,16 +147,27 @@ class Output_Layer(Neuron_Layer):
         Neuron_Layer.__init__(self, index, width, connections_per_node)
         self.exp_out = exp_out # store expected outputs
         self.act_out = [] # record actual outputs
+        
+        
+    def feed_forward(self, node_inputs):
+        
+        for node in self.neurons: # same inputs processed by each node in the layer
+            node.get_out_from_in(node_inputs)
+            self.act_out.append(node.node_out)
+            
+        print "Layer", str(self.index), str(self.neurons)
      
     # @override    
     # calc_error: error at the output layer (treated independently)
     # note that the layer index is consistently, length_of_list - 1
     def calc_error(self):
         
+        print "My name is Prandy!", str(self.act_out), str(self.exp_out)
+        
         for i in range(len(self.neurons)):
             current_act = self.act_out[i]
             current_exp = self.exp_out[i]
-            self.act_out.append((current_exp - current_act) * current_act * (1 - current_act))
+            self.neurons[i].out_error = (current_exp - current_act) * current_act * (1 - current_act)
         
 #===============================================================================
 # Neuron: Represents an individual Neuron
@@ -162,6 +180,7 @@ class Neuron:
         self.deltas = [0] * no_connections
         self.init_weights(-1, 1)
         self.function = self.assignActivation("sigmoid") # null function by default
+        self.node_out = None
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
     def init_weights(self, lower_bound, upper_bound):
@@ -189,15 +208,16 @@ class Neuron:
     
     def __repr__(self):
         
-        return "Neuron: " + str(self.weights)
+        return "Neuron: " + str(self.weights) + " Output: " + str(self.node_out)
         
 def main():
     
     print "In the main method of MLP:"
     
-    ins = [[0.1],[0.2],[0.3],[0.4],[0.5]]
-    outs = [0.1,0.2,0.3,0.4,0.5] 
+    ins = [[0.56],[0.2],[0.3],[0.4],[0.5]]
+    outs = [0.56,0.2,0.3,0.4,0.5] 
     mlp1 = MLP(ins, outs)  
+    print mlp1
     mlp1.train_network_online(0.01, 0.5)
     
 if __name__ == "__main__":
