@@ -31,3 +31,9 @@ def getFunc(func_name):
         if func.__name__ == func_name:
             return func
     raise Exception("The requested function is not available.")
+
+def main():
+    print hyperbolic_tang(-0.314610315998)
+
+if __name__ =="__main__":
+    main()

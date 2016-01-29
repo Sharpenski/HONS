@@ -19,8 +19,10 @@ class MLP:
         self.ins = ins 
         self.outs = outs
         self.layers = []  
+
+        print "Declared new MLP:"
         
-        self.insert_layers([4,6,8,2,7,1])
+        self.insert_layers([3,3,1])
 
     # addLayer: insert layers, the new layer becomes the last element in the list
     def insert_layers(self, layer_sizes):
@@ -37,6 +39,8 @@ class MLP:
            
     # feed_forward_online: online learning (example-by-example training)
     def feed_forward(self, input_ex):
+        
+        print "Feeding input", input_ex, "forward:"
            
         self.layers[0].feed_forward(input_ex) # first layer receives direct input (input layer)
         
@@ -48,6 +52,8 @@ class MLP:
         
     def calc_error(self, learning_rate, momentum_factor, input_index):
         
+        print "Calculating errors for entire network:"
+        
         self.layers[-1].calc_error(input_index) # calculate the initial error at the output layer
         
         for i in range(len(self.layers)-2, -1, -1): # iterate from the pen-ultimate layer backwards
@@ -55,26 +61,39 @@ class MLP:
             
     def update_synapses(self, learn_rate, mom_fact):
         
-        for i in range(1, len(self.layers)):
+        print "Updating synapses of network:"
+        
+        for i in range(0, len(self.layers)):
             self.layers[i].upd_weights(learn_rate, mom_fact, self.layers[i-1])
             
     #===========================================================================
-    # train_network_online: main method of the class regarding online learning
+    # train_network_online: main method of the class regarding online learning (example-by-example network updating)
     #===========================================================================
     def train_network_online(self, learn_rate, mom_fact):
         
+        print "Training network in online mode:"
+        
         for i in range(len(self.ins)):
-            print "Feeding forward input:", self.ins[i]
             self.feed_forward(self.ins[i]) # feed input through the network
             self.calc_error(learn_rate, mom_fact, i) # calculate the error, start at output layer and back-propagate
             self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error   
+            print "Network has completed one epoch of training!\n"
+            
+        print "Network has completed training!"
             
     def __repr__(self):
         
-        return ("\nThe MLP consists of:\n" + 
+        mlp_info = ("\nThe MLP consists of:\n" + 
                 str(len(self.ins)) + " inputs\n" +
                 str(len(self.outs)) + " outputs\n" +
                 str(len(self.layers) + 1) + " layers (including the input layer)\n")
+        
+        layer_info = ""
+        
+        for i in range(len(self.layers)):
+            layer_info += "Layer " + str(i) + " is comprised of " + str(len(self.layers[i].neurons)) + " nodes." "\n"
+            
+        return mlp_info + layer_info 
         
 #===============================================================================
 # Neuron_Layer: represents a layer within an MLP
@@ -106,16 +125,17 @@ class Neuron_Layer:
             
     def feed_forward(self, node_inputs):
         
-        for node in self.neurons: # same inputs processed by each node in the layer
-            node.get_out_from_in(node_inputs)
-            
         print "Feeding forward at layer", str(self.index)
+        
+        for node in self.neurons: # same inputs processed by each node in the layer
+            print "\tFeeding through node", node_inputs
+            node.get_out_from_in(node_inputs)
         
     # calc_error: error at hidden/input layers
     # weighted_sum: the weighted sum of node errors that receive a connection from the current node
     def calc_error(self, next_layer):
         
-        print "Calculating the error at layer...", self.index 
+        print "Calculating the error at layer", self.index 
         
         connected_nodes = next_layer.neurons # nodes of next layer
         weighted_sum = 0
@@ -140,7 +160,7 @@ class Neuron_Layer:
                 
     def __repr__(self):
         
-        return "Neuron_Layer " + str(self.index) + " has " + str(self.noNeurons) + " neurons."
+        return "Neuron_Layer " + str(self.index) + " has " + str(self.noNeurons) + " nodes."
     
 #===============================================================================
 # Output_Layer: all networks have exactly one output layer, error calculation treated independently of the other layers
@@ -156,18 +176,19 @@ class Output_Layer(Neuron_Layer):
         
     def feed_forward(self, node_inputs):
         
+        print "Feeding forward at the Output layer"
+        
         for node in self.neurons: # same inputs processed by each node in the layer
+            print "\tFeeding through node", node_inputs
             node.get_out_from_in(node_inputs)
             self.act_out.append(node.node_out)
-            
-        print "Feeding forward at the output layer"
      
     # @override    
     # calc_error: error at the output layer (treated independently)
     # note that the layer index is consistently, length_of_list - 1
     def calc_error(self, input_index):
         
-        print "Calculating the error at Output layer..."
+        print "Calculating error at the Output layer"
         
         for i in range(len(self.neurons)):
             current_act = self.act_out[input_index]
@@ -204,12 +225,19 @@ class Neuron:
     # get_out_from_in: process the weighted sum of each input via the activation function
     def get_out_from_in(self, node_inputs):
         
+        print "\tInput to node", node_inputs
+        
         weighted_sum = 0
         
         for i in range(len(node_inputs)): # weights and inputs must have matching order
+            print "\t\t", weighted_sum, self.weights[i], node_inputs[i]
             weighted_sum += self.weights[i] * node_inputs[i]
+        
+        print "\tWeighted sum (Function input)", weighted_sum
             
         self.node_out = self.function(weighted_sum) # output is the activation function applied to the weighted sum
+        
+        print "\tOutput (Function output)", self.node_out
     
     def __repr__(self):
         
