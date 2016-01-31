@@ -33,7 +33,7 @@ def getFunc(func_name):
     raise Exception("The requested function is not available.")
 
 def main():
-    print hyperbolic_tang(-0.314610315998)
+    print sigmoid(4)
 
 if __name__ =="__main__":
     main()

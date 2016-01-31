@@ -14,10 +14,10 @@ import random
 #===============================================================================
 class MLP:
     
-    def __init__(self, ins, outs):
+    def __init__(self, ins, exp_outs):
         
         self.ins = ins 
-        self.outs = outs
+        self.exp_outs = exp_outs
         self.layers = []  
 
         print "Declared new MLP:"
@@ -33,7 +33,7 @@ class MLP:
             noLayers = len(self.layers)
             self.layers.append(Neuron_Layer(noLayers, layer_sizes[i], self.layers[noLayers-1].noNeurons))
             
-        self.layers.append(Output_Layer(len(self.layers), layer_sizes[-1], self.layers[-1].noNeurons, self.outs)) # output layer
+        self.layers.append(Output_Layer(len(self.layers), layer_sizes[-1], self.layers[-1].noNeurons, self.exp_outs)) # output layer
         
         print "Completed insertion of layers"
            
@@ -50,7 +50,7 @@ class MLP:
                 next_input_ex.append(node.node_out)
             self.layers[layer_index].feed_forward(next_input_ex)       
         
-    def calc_error(self, learning_rate, momentum_factor, input_index):
+    def calc_error(self, input_index):
         
         print "Calculating errors for entire network:"
         
@@ -59,11 +59,13 @@ class MLP:
         for i in range(len(self.layers)-2, -1, -1): # iterate from the pen-ultimate layer backwards
             self.layers[i].calc_error(self.layers[i+1])
             
-    def update_synapses(self, learn_rate, mom_fact):
+    def update_synapses(self, learn_rate, mom_fact, input_example):
         
-        print "Updating synapses of network:"
+        print "Updating synapses of network:", input_example
         
-        for i in range(0, len(self.layers)):
+        self.layers[0].upd_weights_first(learn_rate, mom_fact, input_example)
+        
+        for i in range(1, len(self.layers)): # iterate from second hidden layer onwards
             self.layers[i].upd_weights(learn_rate, mom_fact, self.layers[i-1])
             
     #===========================================================================
@@ -73,10 +75,11 @@ class MLP:
         
         print "Training network in online mode:"
         
-        for i in range(len(self.ins)):
+        
+        for i in range(len(self.ins)): # repeat process for each input
             self.feed_forward(self.ins[i]) # feed input through the network
-            self.calc_error(learn_rate, mom_fact, i) # calculate the error, start at output layer and back-propagate
-            self.update_synapses(learn_rate, mom_fact) # update the weight values of each synapse according to the calculate error   
+            self.calc_error(i) # calculate the error, start at output layer and back-propagate
+            self.update_synapses(learn_rate, mom_fact, self.ins[i]) # update the weight values of each synapse according to the calculate error   
             print "Network has completed one epoch of training!\n"
             
         print "Network has completed training!"
@@ -85,7 +88,7 @@ class MLP:
         
         mlp_info = ("\nThe MLP consists of:\n" + 
                 str(len(self.ins)) + " inputs\n" +
-                str(len(self.outs)) + " outputs\n" +
+                str(len(self.exp_outs)) + " outputs\n" +
                 str(len(self.layers) + 1) + " layers (including the input layer)\n")
         
         layer_info = ""
@@ -150,6 +153,7 @@ class Neuron_Layer:
     def upd_weights(self, learn_rate, mom_fact, prev_layer):
         
         print "Updating weights at layer:", self.index
+        print "Prev layer", prev_layer
         
         connecting_layer = prev_layer.neurons # the connecting layer
         
@@ -157,6 +161,16 @@ class Neuron_Layer:
             for i in range(len(connecting_layer)): # 'j' references the connecting node
                 neuron.deltas[i] = ((learn_rate * neuron.out_error * connecting_layer[i].node_out) + (mom_fact * neuron.deltas[i])) # calculate the delta
                 neuron.weights[i] += neuron.deltas[i]
+                
+    def upd_weights_first(self, learn_rate, mom_fact, input_example):
+        
+        print "Updating weights at layer: 0"
+        print "Inputs:", input_example
+        
+        for neuron in self.neurons: # iterate through neurons of the first hidden layer
+            for i in range(len(input_example)): # iterate over all inputs from the input layer
+                neuron.deltas[i] = ((learn_rate * neuron.out_error * input_example[i]) + (mom_fact * neuron.deltas[i])) # calculate the delta
+                neuron.weights[i] += neuron.deltas[i]          
                 
     def __repr__(self):
         
@@ -194,6 +208,9 @@ class Output_Layer(Neuron_Layer):
             current_act = self.act_out[input_index]
             current_exp = self.exp_out[input_index]
             self.neurons[i].out_error = (current_exp - current_act) * current_act * (1 - current_act)
+            
+    def print_outputs(self):
+        print "Network output: ", self.act_out
         
 #===============================================================================
 # Neuron: Represents an individual Neuron
@@ -204,8 +221,8 @@ class Neuron:
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
-        self.init_weights(-1, 1)
-        self.function = self.assignActivation("hyperbolic_tang") # null function by default
+        self.init_weights(-3, 3)
+        self.function = self.assignActivation("sigmoid") # null function by default
         self.node_out = None
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -229,8 +246,8 @@ class Neuron:
         
         weighted_sum = 0
         
-        for i in range(len(node_inputs)): # weights and inputs must have matching order
-            print "\t\t", weighted_sum, self.weights[i], node_inputs[i]
+        for i in range(len(node_inputs)): # weights and inputs must have matching order (first input corresponds to first weight/synapse)
+            print "\t\t weighted_sum/weight/input -->", weighted_sum, self.weights[i], node_inputs[i]
             weighted_sum += self.weights[i] * node_inputs[i]
         
         print "\tWeighted sum (Function input)", weighted_sum
@@ -247,11 +264,13 @@ def main():
     
     print "In the main method of MLP:"
     
-    ins = [[0.56],[0.2],[0.3],[0.4],[0.5],[0.56],[0.2],[0.3],[0.4],[0.5]]
-    outs = [0.56,0.2,0.3,0.4,0.5,0.56,0.2,0.3,0.4,0.5] 
+    ins = [[0.1],[0.2]]
+    outs = [0.2,0.4] 
     mlp1 = MLP(ins, outs)  
-    print mlp1
-    mlp1.train_network_online(0.01, 0.5)
+
+    mlp1.train_network_online(0.05, 0.5)
+    print
+    #mlp1.feed_forward([1])
     
 if __name__ == "__main__":
     main()

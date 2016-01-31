@@ -22,7 +22,7 @@ def swap(list, a, b):
     list[a] = list[b]
     list[b] = temp
     
-friends = ["Arthur", "Brain", "Buster", "Francine"]
+"""friends = ["Arthur", "Brain", "Buster", "Francine"]
 hier = [0] * 4
 relation = str(raw_input())
 while relation:
@@ -41,7 +41,15 @@ for i in range(1, len(hier)):
     if hier[i] > hier[lowest]:
         lowest = i
     
-print friends[lowest]
+print friends[lowest]"""
+
+print "\n\n\n"
+
+a = []
+a.append(9)
+print a[0], a
+a[0] = a[0] * 2
+print a[0], a
     
     
 
