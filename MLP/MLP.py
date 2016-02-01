@@ -168,18 +168,25 @@ class Output_Layer(Neuron_Layer):
         
         Neuron_Layer.__init__(self, index, width, connections_per_node)
         self.exp_out = exp_out # store expected outputs
-        self.act_out = [] # record actual outputs
+        self.act_out = [None] * len(exp_out)  # record actual outputs
         
         
-    def feed_forward(self, node_inputs):
+    def feed_forward(self, input_example):
         
         #print "Feeding forward at the Output layer"
         
+        """
         for node in self.neurons: # same inputs processed by each node in the layer
             #print "\tFeeding through node", node_inputs
             node.get_out_from_in(node_inputs)
             self.act_out.append(node.node_out)
-     
+        """
+            
+        for node_index in range(len(self.neurons)):
+            self.neurons[node_index].get_out_from_in(input_example)  
+            self.act_out.append(self.neurons[node_index].node_out)  
+            
+             
     # @override    
     # calc_error: error at the output layer (treated independently)
     # note that the layer index is consistently, length_of_list - 1
@@ -192,6 +199,7 @@ class Output_Layer(Neuron_Layer):
         
         for i in range(len(self.neurons)):
             self.neurons[i].out_error = (current_exp - current_act) * current_act * (1 - current_act)
+            print self.neurons[i].out_error
             
     def print_outputs(self):
         print "Network output: ", self.act_out
@@ -247,7 +255,7 @@ class Neuron:
 #===========================================================================
 # train_network_online: main method of the class regarding online learning (example-by-example network updating)
 #===========================================================================
-def train_network_online(self, mlp, learn_rate, mom_fact, no_epochs):
+def train_network_online(mlp, learn_rate, mom_fact, no_epochs):
     
     print "Training network in online mode:"
     
@@ -265,13 +273,16 @@ def train_network_online(self, mlp, learn_rate, mom_fact, no_epochs):
     
     epoch = 0
     while epoch < no_epochs:
-        mlp.feed_forward()
-        mlp.calc_error()
-        mlp.update_synapses()
+        for i in range(len(mlp.ins)):
+            mlp.feed_forward(mlp.ins[i])
+            mlp.calc_error(i)
+            mlp.update_synapses(learn_rate, mom_fact, mlp.ins[i])
         print "MLP has completed one epoch of training"
         epoch += 1
         
     print "MLP has completed training"
+    
+    return mlp
     
         
 def main():
@@ -282,7 +293,7 @@ def main():
     outs = [0.2, 0.4, 0.6] 
     mlp1 = MLP(ins, outs)  
     print mlp1
-
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 10000)
     mlp1.feed_forward([0.1])
     
 if __name__ == "__main__":
