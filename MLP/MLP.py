@@ -18,9 +18,6 @@ class MLP:
         
         self.no_inputs = no_inputs 
         self.layers = []  
-
-        print "Declared new MLP:"
-        
         self.insert_layers([3,3,1])
 
     # addLayer: insert layers, the new layer becomes the last element in the list
@@ -33,13 +30,11 @@ class MLP:
             self.layers.append(Neuron_Layer(noLayers, layer_sizes[i], self.layers[noLayers-1].noNeurons))
             
         self.layers.append(Output_Layer(len(self.layers), layer_sizes[-1], self.layers[-1].noNeurons)) # output layer
-        
-        #print "Completed insertion of layers"
            
     # feed_forward_online: online learning (example-by-example training)
     def feed_forward(self, input_example, bias):
         
-        #print "Feeding input", input_example, "forward:"
+        # print "Feeding input", input_example, "forward:"
            
         self.layers[0].feed_forward(input_example, bias) # first layer receives direct input (input layer)
         
@@ -51,16 +46,18 @@ class MLP:
         
     def calc_error(self, expected_output):
         
-        #print "Calculating errors for entire network:"
+        # print "Calculating errors for entire network:"
         
-        self.layers[-1].calc_error(expected_output) # calculate the initial error at the output layer
+        net_error = self.layers[-1].calc_error(expected_output) # calculate the initial error at the output layer
         
         for i in range(len(self.layers)-2, -1, -1): # iterate from the pen-ultimate layer backwards
             self.layers[i].calc_error(self.layers[i+1])
             
+        return net_error    
+            
     def update_synapses(self, learn_rate, mom_fact, input_example):
         
-        #print "Updating synapses of network:", input_example
+        # print "Updating synapses of network:", input_example
         
         self.layers[0].upd_weights_first(learn_rate, mom_fact, input_example)
         
@@ -159,28 +156,16 @@ class Output_Layer(Neuron_Layer):
     def __init__(self, index, width, connections_per_node):
         
         Neuron_Layer.__init__(self, index, width, connections_per_node)
-        # self.exp_out = exp_out # store expected outputs
-        # self.act_out = [None] * len(exp_out)  # record actual outputs
         
         
     def feed_forward(self, layer_inputs, bias):
         
         # print "Feeding forward at the Output layer"
-        
-        """
-        for node in self.neurons: # same inputs processed by each node in the layer
-            #print "\tFeeding through node", node_inputs
-            node.get_out_from_in(node_inputs)
-            self.act_out.append(node.node_out)
-        """
             
         for node_index in range(len(self.neurons)):
             # print "\tFeeding through node", layer_inputs
             self.neurons[node_index].get_out_from_in(layer_inputs, bias)  
             self.act_out = self.neurons[node_index].node_out 
-            
-        # print self.act_out 
-            
              
     # @override    
     # calc_error: error at the output layer (treated independently)
@@ -194,9 +179,14 @@ class Output_Layer(Neuron_Layer):
         
         print self.act_out, expected_output
         
+        network_error = 0
+        
         for i in range(len(self.neurons)):
             self.neurons[i].out_error = (current_exp - current_act) * current_act * (1 - current_act)
-            print "error", self.neurons[i].out_error
+            network_error += self.neurons[i].out_error / len(self.neurons)
+            # print "error", self.neurons[i].out_error
+            
+        return network_error
             
     def print_outputs(self):
         print "Network output: ", self.act_out
@@ -252,34 +242,62 @@ class Neuron:
 #===========================================================================
 # train_network_online: main method of the class regarding online learning (example-by-example network updating)
 #===========================================================================
-def train_network_online(mlp, learn_rate, mom_fact, no_epochs, net_inputs, net_outputs):
+def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias):
     
     print "Training network in online mode:"
     
+    no_examples = len(in_out_map)
+    
+    net_errors = [0] * len(in_out_map) # record error for ech input example
+    avg_error = 0
     epoch = 0
+    
     while epoch < no_epochs:
-        for i in range(len(net_inputs)):
-            mlp.feed_forward(net_inputs[i], 0.0)
-            mlp.calc_error(net_outputs[i])
-            mlp.update_synapses(learn_rate, mom_fact, net_inputs[i])
-        #print "MLP has completed one epoch of training"
+        for i in range(no_examples):
+            mlp.feed_forward(in_out_map[i][0], bias)
+            net_errors[i] = mlp.calc_error(in_out_map[i][1])
+            mlp.update_synapses(learn_rate, mom_fact, in_out_map[i][0])
         epoch += 1
         
     print "MLP has completed training"
     
-    return mlp
+    for error in net_errors:
+        avg_error += (abs(error) / len(net_errors))
     
+    print "Average error: " + str(avg_error)
+    
+    return mlp # return the newly trained MLP
+
+#===============================================================================
+# build_in_out_map
+# construct an input-output mapping from the file provided as a parameter
+#===============================================================================
+def build_in_out_map(filename):
+    
+    file_to_read = open(filename, "r")
+    io_map = []
+    
+    io_line = file_to_read.readline()
+    
+    while io_line:
+        input_list = []
+        value = io_line.split()
+        for i in range(len(value)-1):
+            input_list.append(float(value[i]))
+        new_entry = (input_list, float(value[-1]))
+        io_map.append(new_entry)
+        io_line = file_to_read.readline()  
+        
+    return io_map
         
 def main():
     
-    print "In the main method of MLP:"
+    filename = raw_input("Please specify the filename:\n")
+    training_set = build_in_out_map("test_cases/" + filename)
+    no_inputs = int(raw_input("Please specify the number of inputs for the network:\n"))
     
-    twoX_ins = [[0.1],[0.2],[0.3],[0.4],[0.5],[0.32],[0.15],[0.25],[0.35],[0.45]]
-    twoX_outs = [0.2, 0.4, 0.6,0.8,1.0,0.64,0.3,0.5,0.7,0.9] 
-    orI = [[1,1]]
-    orO = [1]
-    mlp1 = MLP(2) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.05, 0.6, 10000, orI, orO) # MLP instance, learning rate, momentum factor, no.epochs
+    mlp1 = MLP(no_inputs) # construct a new MLP which takes 1 input  
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 10000, training_set, 1) # MLP instance, learning rate, momentum factor, no.epochs
     
 if __name__ == "__main__":
     main()
