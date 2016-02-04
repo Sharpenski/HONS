@@ -14,11 +14,13 @@ import random
 #===============================================================================
 class MLP:
     
-    def __init__(self, no_inputs):
+    def __init__(self, no_inputs, config):
         
         self.no_inputs = no_inputs 
         self.layers = []  
-        self.insert_layers([3,3,1])
+        self.insert_layers(config)
+        
+        print self
 
     # addLayer: insert layers, the new layer becomes the last element in the list
     def insert_layers(self, layer_sizes):
@@ -42,7 +44,9 @@ class MLP:
             next_input_ex = [] 
             for node in self.layers[layer_index - 1].neurons: # reference the node output
                 next_input_ex.append(node.node_out)
-            self.layers[layer_index].feed_forward(next_input_ex, bias)       
+            self.layers[layer_index].feed_forward(next_input_ex, bias)  
+            
+        return self.layers[-1].act_out     
         
     def calc_error(self, expected_output):
         
@@ -120,7 +124,7 @@ class Neuron_Layer:
             current_node = self.neurons[i] # references the current node of the current layer
             for node in connected_nodes: # nodes of next layer (reference the weight value of each connection)
                 weighted_sum += node.weights[i] * node.out_error # weights[i] references the 'i'th node of the connecting layer
-            current_node.out_error = weighted_sum  * current_node.node_out * (1 - current_node.node_out) 
+            current_node.out_error = (weighted_sum  * current_node.node_out) * current_node.node_out * (1 - current_node.node_out)
             
     # update weights: update the weight values in accordance with back propagation rules (training)
     def upd_weights(self, learn_rate, mom_fact, prev_layer):
@@ -177,14 +181,14 @@ class Output_Layer(Neuron_Layer):
         current_act = self.act_out
         current_exp = expected_output
         
-        print self.act_out, expected_output
+        #print self.act_out, expected_output
         
         network_error = 0
         
         for i in range(len(self.neurons)):
             self.neurons[i].out_error = (current_exp - current_act) * current_act * (1 - current_act)
             network_error += self.neurons[i].out_error / len(self.neurons)
-            # print "error", self.neurons[i].out_error
+            #print "error", self.neurons[i].out_error
             
         return network_error
             
@@ -201,7 +205,7 @@ class Neuron:
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
         self.init_weights(-1, 1)
-        self.function = self.assignActivation("hyperbolic_tang") # null function by default
+        self.function = self.assignActivation("tanh") # null function by default
         self.node_out = None
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -229,11 +233,11 @@ class Neuron:
             # print "\t\t weighted_sum/weight/input -->", weighted_sum, self.weights[i], node_inputs[i]
             weighted_sum += self.weights[i] * node_inputs[i]
         
-        # print "\tWeighted sum (Function input)", weighted_sum
+        #print "\tWeighted sum (Function input)", weighted_sum + bias
             
         self.node_out = self.function(weighted_sum + bias) # output is the activation function applied to the weighted sum
         
-        # print "\tOutput (Function output)", self.node_out
+        #print "\tOutput (Function output)", self.node_out
     
     def __repr__(self):
         
@@ -249,12 +253,13 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias)
     no_examples = len(in_out_map)
     
     net_errors = [0] * len(in_out_map) # record error for ech input example
+    net_outputs = [0] * len(in_out_map)
     avg_error = 0
     epoch = 0
     
     while epoch < no_epochs:
         for i in range(no_examples):
-            mlp.feed_forward(in_out_map[i][0], bias)
+            net_outputs[i] = mlp.feed_forward(in_out_map[i][0], bias)
             net_errors[i] = mlp.calc_error(in_out_map[i][1])
             mlp.update_synapses(learn_rate, mom_fact, in_out_map[i][0])
         epoch += 1
@@ -264,7 +269,8 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias)
     for error in net_errors:
         avg_error += (abs(error) / len(net_errors))
     
-    print "Average error: " + str(avg_error)
+    print "Average error: " + str(avg_error) 
+    print net_outputs
     
     return mlp # return the newly trained MLP
 
@@ -295,9 +301,14 @@ def main():
     filename = raw_input("Please specify the filename:\n")
     training_set = build_in_out_map("test_cases/" + filename)
     no_inputs = int(raw_input("Please specify the number of inputs for the network:\n"))
+    no_layers = int(raw_input("Number of layers for Network:"))
+    layers = []
     
-    mlp1 = MLP(no_inputs) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.05, 0.5, 10000, training_set, 1) # MLP instance, learning rate, momentum factor, no.epochs
+    for i in range(no_layers):
+        layers.append(int(raw_input("Width of layer: " + str(i) + "\n")))
+    
+    mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set, 0.0) # MLP instance, learning rate, momentum factor, no.epochs
     
 if __name__ == "__main__":
     main()

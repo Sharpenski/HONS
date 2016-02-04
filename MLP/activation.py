@@ -9,7 +9,7 @@ import math
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
-def hyperbolic_tang(x):
+def tanh(x):
     return math.tanh(x)
 
 def nullFunc(x):
@@ -21,12 +21,15 @@ def signum(x):
     else: 
         return 1
     
+def sine(x):
+    return math.sin(x)
+    
 def threshold(x):
     print
     
 # getFunc: returns the function associated with the func_name provided
 def getFunc(func_name):
-    functions = [sigmoid, hyperbolic_tang, nullFunc, signum, threshold]
+    functions = [sigmoid, tanh, nullFunc, signum, threshold, sine]
     for func in functions:
         if func.__name__ == func_name:
             return func
