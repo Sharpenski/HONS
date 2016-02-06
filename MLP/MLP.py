@@ -5,7 +5,7 @@ Created on 12 Dec 2015
 '''
 
 import activation
-import random
+import random, math
 
 #===============================================================================
 # MLP: Class representing a new MLP
@@ -76,8 +76,10 @@ class MLP:
         
         layer_info = ""
         
-        for i in range(len(self.layers)):
-            layer_info += "Layer " + str(i) + " is comprised of " + str(len(self.layers[i].neurons)) + " nodes." "\n"
+        for i in range(len(self.layers)-1):
+            layer_info += "Layer " + str(i) + " is comprised of " + str(len(self.layers[i].neurons)) + " nodes.\n" 
+            
+        layer_info += "The Output layer is comprised of " + str(len(self.layers[-1].neurons)) + " nodes.\n"
             
         return mlp_info + layer_info 
         
@@ -205,7 +207,7 @@ class Neuron:
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
         self.init_weights(-1, 1)
-        self.function = self.assignActivation("tanh") # null function by default
+        self.function = self.assignActivation("sigmoid") # null function by default
         self.node_out = None
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -258,17 +260,24 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias)
     epoch = 0
     
     while epoch < no_epochs:
+        
+        avg_error = 0 
+        print epoch, avg_error
+        
         for i in range(no_examples):
             net_outputs[i] = mlp.feed_forward(in_out_map[i][0], bias)
             net_errors[i] = mlp.calc_error(in_out_map[i][1])
             mlp.update_synapses(learn_rate, mom_fact, in_out_map[i][0])
+            
+        for error in net_errors:
+            avg_error += (abs(error) / len(net_errors))
+            
+        if avg_error < math.pow(1,-3) :
+            break
+        
         epoch += 1
         
     print "MLP has completed training"
-    
-    for error in net_errors:
-        avg_error += (abs(error) / len(net_errors))
-    
     print "Average error: " + str(avg_error) 
     print net_outputs
     
@@ -300,15 +309,15 @@ def main():
     
     filename = raw_input("Please specify the filename:\n")
     training_set = build_in_out_map("test_cases/" + filename)
-    no_inputs = int(raw_input("Please specify the number of inputs for the network:\n"))
+    no_inputs = int(raw_input("Please specify the number of inputs for the network: "))
     no_layers = int(raw_input("Number of layers for Network:"))
     layers = []
     
     for i in range(no_layers):
-        layers.append(int(raw_input("Width of layer: " + str(i) + "\n")))
+        layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set, 0.0) # MLP instance, learning rate, momentum factor, no.epochs
+    mlp1 = train_network_online(mlp1, 0.2, 0.5, 100000, training_set, 0.0) # MLP instance, learning rate, momentum factor, no.epochs
     
 if __name__ == "__main__":
     main()
