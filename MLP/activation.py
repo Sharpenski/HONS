@@ -36,7 +36,7 @@ def getFunc(func_name):
     raise Exception("The requested function is not available.")
 
 def main():
-    print sigmoid(4)
+    print tanh(-1)
 
 if __name__ =="__main__":
     main()
