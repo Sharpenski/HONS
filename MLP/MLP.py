@@ -42,7 +42,7 @@ class MLP:
         
         for layer_index in range(1, len(self.layers)): # iterate through remaining layers (hidden + output)
             next_input_ex = [] 
-            for node in self.layers[layer_index - 1].neurons: # reference the node output
+            for node in self.layers[layer_index - 1].neurons: # reference the node output of the previous layer
                 next_input_ex.append(node.node_out)
             self.layers[layer_index].feed_forward(next_input_ex, bias)  
             
@@ -171,7 +171,7 @@ class Output_Layer(Neuron_Layer):
         for node_index in range(len(self.neurons)):
             # print "\tFeeding through node", layer_inputs
             self.neurons[node_index].get_out_from_in(layer_inputs, bias)  
-            self.act_out = self.neurons[node_index].node_out 
+            self.act_out = self.neurons[node_index].node_out / len(self.neurons)
              
     # @override    
     # calc_error: error at the output layer (treated independently)
@@ -180,7 +180,7 @@ class Output_Layer(Neuron_Layer):
         
         # print "Calculating error at the Output layer"
         
-        current_act = self.act_out
+        current_act = self.act_out 
         current_exp = expected_output
         
         network_error = 0
