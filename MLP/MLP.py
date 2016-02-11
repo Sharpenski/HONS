@@ -270,7 +270,7 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias)
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.001:
+        if avg_error < 0.0001:
             break
         
         print avg_error
@@ -317,7 +317,7 @@ def main():
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.01, 0.5, 100000, training_set, 0.0) # MLP instance, learning rate, momentum factor, no.epochs
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set, 0.0) # MLP instance, learning rate, momentum factor, no.epochs
     
 if __name__ == "__main__":
     main()

@@ -9,8 +9,14 @@ import math
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
+def disgmoid(x):
+    return sigmoid(x) * (1 - sigmoid(x))
+
 def tanh(x):
     return math.tanh(x)
+
+def dtanh(x):
+    return 1 - x**2
 
 def nullFunc(x):
     return 0
