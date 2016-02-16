@@ -25,26 +25,26 @@ class MLP:
     # addLayer: insert layers, the new layer becomes the last element in the list
     def insert_layers(self, layer_sizes):
         
-        self.layers.append(Neuron_Layer(0, layer_sizes[0], self.no_inputs)) # input layer
+        self.layers.append(Neuron_Layer(0, layer_sizes[0], self.no_inputs, 0.1)) # input layer
         
         for i in range(1, len(layer_sizes)-1):
             noLayers = len(self.layers)
-            self.layers.append(Neuron_Layer(noLayers, layer_sizes[i], self.layers[noLayers-1].noNeurons))
+            self.layers.append(Neuron_Layer(noLayers, layer_sizes[i], self.layers[noLayers-1].noNeurons, 0.1))
             
         self.layers.append(Output_Layer(len(self.layers), layer_sizes[-1], self.layers[-1].noNeurons)) # output layer
            
     # feed_forward_online: online learning (example-by-example training)
-    def feed_forward(self, input_example, bias):
+    def feed_forward(self, input_example):
         
         # print "Feeding input", input_example, "forward:"
            
-        self.layers[0].feed_forward(input_example, bias) # first layer receives direct input (input layer)
+        self.layers[0].feed_forward(input_example) # first layer receives direct input (input layer)
         
         for layer_index in range(1, len(self.layers)): # iterate through remaining layers (hidden + output)
             next_input_ex = [] 
             for node in self.layers[layer_index - 1].neurons: # reference the node output of the previous layer
                 next_input_ex.append(node.node_out)
-            self.layers[layer_index].feed_forward(next_input_ex, bias)  
+            self.layers[layer_index].feed_forward(next_input_ex)  
             
         return self.layers[-1].act_out     
         
@@ -88,7 +88,7 @@ class MLP:
 #===============================================================================
 class Neuron_Layer:
     
-    def __init__(self, index, width, connections_per_node):
+    def __init__(self, index, width, connections_per_node, bias):
         
         self.noNeurons = 0
         self.index = index # the input layer will have index 1, the output layer will have index (length - 1)
@@ -105,13 +105,13 @@ class Neuron_Layer:
             
         return neuron_array
             
-    def feed_forward(self, node_inputs, bias):
+    def feed_forward(self, node_inputs):
         
         # print "Feeding forward at layer", str(self.index)
         
         for node in self.neurons: # same inputs processed by each node in the layer
             # print "\tFeeding through node", node_inputs
-            node.get_out_from_in(node_inputs, bias)
+            node.get_out_from_in(node_inputs)
         
     # calc_error: error at hidden/input layers
     # weighted_sum: the weighted sum of node errors that receive a connection from the current node
@@ -126,7 +126,10 @@ class Neuron_Layer:
             current_node = self.neurons[i] # references the current node of the current layer
             for node in connected_nodes: # nodes of next layer (reference the weight value of each connection)
                 weighted_sum += node.weights[i] * node.out_error # weights[i] references the 'i'th node of the connecting layer
-            current_node.out_error = (weighted_sum) * current_node.node_out * (1 - current_node.node_out)
+            if current_node.function == activation.getFunc("sigmoid"): 
+                current_node.out_error = (weighted_sum) * current_node.node_out * (1 - current_node.node_out) # sigmoid
+            else:
+                current_node.out_error = (weighted_sum) * (1 - current_node.node_out**2) # tanh
             
     # update weights: update the weight values in accordance with back propagation rules (training)
     def upd_weights(self, learn_rate, mom_fact, prev_layer):
@@ -161,16 +164,16 @@ class Output_Layer(Neuron_Layer):
     
     def __init__(self, index, width, connections_per_node):
         
-        Neuron_Layer.__init__(self, index, width, connections_per_node)
+        Neuron_Layer.__init__(self, index, width, connections_per_node, 0.1)
         
         
-    def feed_forward(self, layer_inputs, bias):
+    def feed_forward(self, layer_inputs):
         
         # print "Feeding forward at the Output layer"
             
         for node_index in range(len(self.neurons)):
             # print "\tFeeding through node", layer_inputs
-            self.neurons[node_index].get_out_from_in(layer_inputs, bias)  
+            self.neurons[node_index].get_out_from_in(layer_inputs)  
             self.act_out = self.neurons[node_index].node_out / len(self.neurons)
              
     # @override    
@@ -185,8 +188,12 @@ class Output_Layer(Neuron_Layer):
         
         network_error = 0
         
-        for i in range(len(self.neurons)):
-            self.neurons[i].out_error = (current_exp - current_act) * current_act * (1 - current_act)
+        for i in range(len(self.neurons)):  
+            current_node = self.neurons[i]
+            if current_node.function == activation.getFunc("sigmoid"): 
+                current_node.out_error = (current_exp - current_act) * current_act * (1 - current_act)
+            else:
+                current_node.out_error = (current_exp - current_act) * (1 - current_act**2)  
             network_error += self.neurons[i].out_error / len(self.neurons)
             #print "error", self.neurons[i].out_error
             
@@ -204,8 +211,8 @@ class Neuron:
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
-        self.init_weights(-1, 1)
-        self.function = self.assignActivation("sigmoid") # null function by default
+        self.init_weights(-3, 3)
+        self.function = self.assignActivation("tanh") # null function by default
         self.node_out = None
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -223,7 +230,7 @@ class Neuron:
         return activation.getFunc(func_name)
         
     # get_out_from_in: process the weighted sum of each input via the activation function
-    def get_out_from_in(self, node_inputs, bias):
+    def get_out_from_in(self, node_inputs):
         
         # print "\tInput to node", node_inputs
         
@@ -235,7 +242,7 @@ class Neuron:
         
         # print "\tWeighted sum (Function input)", weighted_sum, bias
             
-        self.node_out = self.function(weighted_sum + bias) # output is the activation function applied to the weighted sum
+        self.node_out = self.function(weighted_sum) # output is the activation function applied to the weighted sum
         
         # print "\tOutput (Function output)", self.node_out
     
@@ -246,7 +253,7 @@ class Neuron:
 #===========================================================================
 # train_network_online: main method of the class regarding online learning (example-by-example network updating)
 #===========================================================================
-def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias):
+def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
     
     print "Training network in online mode:"
     
@@ -263,14 +270,14 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias)
         print epoch
         
         for i in range(no_examples):
-            net_outputs[i] = mlp.feed_forward(in_out_map[i][0], bias)
+            net_outputs[i] = mlp.feed_forward(in_out_map[i][0])
             net_errors[i] = mlp.calc_error(in_out_map[i][1])
             mlp.update_synapses(learn_rate, mom_fact, in_out_map[i][0])
             
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.0001:
+        if avg_error < 0.001:
             break
         
         print avg_error
@@ -282,6 +289,16 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map, bias)
     print net_outputs
     
     return mlp # return the newly trained MLP
+
+def train_network_batch(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
+    
+    print "Training network in batch mode:"
+    
+    epoch = 0
+    
+    while epoch < no_epochs:
+    
+        epoch -= 1
 
 #===============================================================================
 # build_in_out_map
@@ -317,7 +334,8 @@ def main():
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set, 0.0) # MLP instance, learning rate, momentum factor, no.epochs
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
+    print mlp1.feed_forward([0.1,0.2])
     
 if __name__ == "__main__":
     main()
