@@ -165,6 +165,7 @@ class Output_Layer(Neuron_Layer):
     def __init__(self, index, width, connections_per_node):
         
         Neuron_Layer.__init__(self, index, width, connections_per_node, 0.1)
+        self.act_out = [0] * width # store the outputs for each node
         
         
     def feed_forward(self, layer_inputs):
@@ -174,7 +175,7 @@ class Output_Layer(Neuron_Layer):
         for node_index in range(len(self.neurons)):
             # print "\tFeeding through node", layer_inputs
             self.neurons[node_index].get_out_from_in(layer_inputs)  
-            self.act_out = self.neurons[node_index].node_out / len(self.neurons)
+            self.act_out[node_index] = self.neurons[node_index].node_out
              
     # @override    
     # calc_error: error at the output layer (treated independently)
@@ -183,17 +184,19 @@ class Output_Layer(Neuron_Layer):
         
         # print "Calculating error at the Output layer"
         
-        current_act = self.act_out 
-        current_exp = expected_output
-        
         network_error = 0
         
         for i in range(len(self.neurons)):  
+            
             current_node = self.neurons[i]
+            current_exp = expected_output[i] # expected output for current node
+            current_act = self.act_out[i] # the actual output for the current node
+            
             if current_node.function == activation.getFunc("sigmoid"): 
                 current_node.out_error = (current_exp - current_act) * current_act * (1 - current_act)
             else:
                 current_node.out_error = (current_exp - current_act) * (1 - current_act**2)  
+                
             network_error += self.neurons[i].out_error / len(self.neurons)
             #print "error", self.neurons[i].out_error
             
@@ -211,7 +214,7 @@ class Neuron:
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
-        self.init_weights(-3, 3)
+        self.init_weights(-2, 2)
         self.function = self.assignActivation("tanh") # null function by default
         self.node_out = None
         
@@ -290,21 +293,11 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
     
     return mlp # return the newly trained MLP
 
-def train_network_batch(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
-    
-    print "Training network in batch mode:"
-    
-    epoch = 0
-    
-    while epoch < no_epochs:
-    
-        epoch -= 1
-
 #===============================================================================
 # build_in_out_map
 # construct an input-output mapping from the file provided as a parameter
 #===============================================================================
-def build_in_out_map(filename):
+def build_in_out_map(filename, noInputs):
     
     file_to_read = open(filename, "r")
     io_map = []
@@ -312,11 +305,13 @@ def build_in_out_map(filename):
     io_line = file_to_read.readline()
     
     while io_line:
-        input_list = []
+        input_list, output_list = [], []
         value = io_line.split()
-        for i in range(len(value)-1):
+        for i in range(noInputs): # populate the input list
             input_list.append(float(value[i]))
-        new_entry = (input_list, float(value[-1]))
+        for i in range(noInputs, len(value)): # populate the output list
+            output_list.append(float(value[i]))
+        new_entry = (input_list, output_list)
         io_map.append(new_entry)
         io_line = file_to_read.readline()  
         
@@ -325,17 +320,17 @@ def build_in_out_map(filename):
 def main():
     
     filename = raw_input("Please specify the filename:\n")
-    training_set = build_in_out_map("test_cases/" + filename)
     no_inputs = int(raw_input("Please specify the number of inputs for the network: "))
+    training_set = build_in_out_map("test_cases/" + filename, no_inputs)
     no_layers = int(raw_input("Number of layers for Network: "))
     layers = []
+    print training_set
     
     for i in range(no_layers):
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
     mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
-    print mlp1.feed_forward([0.1,0.2])
     
 if __name__ == "__main__":
     main()
