@@ -46,7 +46,10 @@ class MLP:
                 next_input_ex.append(node.node_out)
             self.layers[layer_index].feed_forward(next_input_ex)  
             
-        return self.layers[-1].act_out     
+        net_output = []
+        net_output.extend(self.layers[-1].act_out) 
+            
+        return net_output
         
     def calc_error(self, expected_output):
         
@@ -262,8 +265,8 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
     
     no_examples = len(in_out_map)
     
-    net_errors = [0] * len(in_out_map) # record error for ech input example
-    net_outputs = [0] * len(in_out_map)
+    net_errors = [0] * len(in_out_map) # record error for each input example
+    net_outputs = [[]] * len(in_out_map) # record the outputs for printing
     avg_error = 0
     epoch = 0
     

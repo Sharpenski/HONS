@@ -45,12 +45,20 @@ print friends[lowest]"""
 
 print "\n\n\n"
 
-a = []
-a.append(9)
-print a[0], a
-a[0] = a[0] * 2
-print a[0], a
+class Tester():
     
+    def getNum(self, i):
+        self.num = [i + 3]
+        
+    def getter(self):
+        return self.num
+
+out = [0] * 4
+t = Tester()
+for i in range(4):
+    t.getNum(i)
+    out[i] = t.getter()
+print out
     
 
 
