@@ -217,7 +217,7 @@ class Neuron:
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
-        self.init_weights(-2, 2)
+        self.init_weights(-3, 3)
         self.function = self.assignActivation("tanh") # null function by default
         self.node_out = None
         
@@ -296,6 +296,26 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
     
     return mlp # return the newly trained MLP
 
+def run_test_set(mlp, test_set):
+    
+    print "Running test set through the trained MLP"
+    
+    no_examples = len(test_set)
+    net_errors = [0] * len(test_set) # record error for each input example
+    net_outputs = [[]] * len(test_set) # record the outputs for printing
+    
+    for i in range(no_examples):
+        net_outputs[i] = mlp.feed_forward(test_set[i][0])
+        net_errors[i] = mlp.calc_error(test_set[i][1])
+        
+    avg_error = 0
+        
+    for error in net_errors:
+        avg_error += (abs(error) / len(net_errors))
+        
+    print avg_error
+    print net_outputs
+
 #===============================================================================
 # build_in_out_map
 # construct an input-output mapping from the file provided as a parameter
@@ -327,13 +347,16 @@ def main():
     training_set = build_in_out_map("test_cases/" + filename, no_inputs)
     no_layers = int(raw_input("Number of layers for Network: "))
     layers = []
-    print training_set
     
     for i in range(no_layers):
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 10000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
+    
+    testname = raw_input("Please specify the filename of the test set")
+    test_set = build_in_out_map('test_cases/' + testname, no_inputs)
+    run_test_set(mlp1, test_set) # run the test set through the trained MLP
     
 if __name__ == "__main__":
     main()
