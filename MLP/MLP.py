@@ -217,7 +217,7 @@ class Neuron:
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
-        self.init_weights(-3, 3)
+        self.init_weights(-2, 2)
         self.function = self.assignActivation("tanh") # null function by default
         self.node_out = None
         
@@ -283,7 +283,7 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.001:
+        if avg_error < 0.005:
             break
         
         print avg_error
@@ -352,7 +352,7 @@ def main():
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
-    mlp1 = train_network_online(mlp1, 0.05, 0.5, 10000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
+    mlp1 = train_network_online(mlp1, 0.05, 0.3, 10000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
     
     testname = raw_input("Please specify the filename of the test set")
     test_set = build_in_out_map('test_cases/' + testname, no_inputs)
