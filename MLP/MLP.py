@@ -200,7 +200,7 @@ class Output_Layer(Neuron_Layer):
             else:
                 current_node.out_error = (current_exp - current_act) * (1 - current_act**2)  
                 
-            network_error += self.neurons[i].out_error / len(self.neurons)
+            network_error += self.neurons[i].out_error**2 / len(self.neurons)
             #print "error", self.neurons[i].out_error
             
         return network_error
@@ -256,6 +256,14 @@ class Neuron:
         
         return "Neuron: " + str(self.weights) + " Output: " + str(self.node_out) + " Function:" + str(self.function)
     
+#===============================================================================
+# Bias: inherits Neuron - special case in which output is fixed (static)
+#===============================================================================
+class Bias(Neuron):
+    
+    def __init__(self, no_connections):
+        Neuron.__init__(self, no_connections)
+    
 #===========================================================================
 # train_network_online: main method of the class regarding online learning (example-by-example network updating)
 #===========================================================================
@@ -283,7 +291,7 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.005:
+        if avg_error < 0.001:
             break
         
         print avg_error
@@ -353,10 +361,12 @@ def main():
     
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
     mlp1 = train_network_online(mlp1, 0.05, 0.3, 10000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
-    
-    testname = raw_input("Please specify the filename of the test set")
-    test_set = build_in_out_map('test_cases/' + testname, no_inputs)
-    run_test_set(mlp1, test_set) # run the test set through the trained MLP
+       
+    testname = raw_input("Please specify the filename of the test set:\n")
+    while testname:
+        test_set = build_in_out_map('test_cases/' + testname, no_inputs)
+        run_test_set(mlp1, test_set) # run the test set through the trained MLP
+        testname = raw_input("Please specify the filename of the test set:\n")
     
 if __name__ == "__main__":
     main()
