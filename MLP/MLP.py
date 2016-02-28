@@ -256,14 +256,6 @@ class Neuron:
         
         return "Neuron: " + str(self.weights) + " Output: " + str(self.node_out) + " Function:" + str(self.function)
     
-#===============================================================================
-# Bias: inherits Neuron - special case in which output is fixed (static)
-#===============================================================================
-class Bias(Neuron):
-    
-    def __init__(self, no_connections):
-        Neuron.__init__(self, no_connections)
-    
 #===========================================================================
 # train_network_online: main method of the class regarding online learning (example-by-example network updating)
 #===========================================================================
@@ -291,7 +283,7 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.001:
+        if avg_error < 0.003:
             break
         
         print avg_error
@@ -350,21 +342,22 @@ def build_in_out_map(filename, noInputs):
         
 def main():
     
-    filename = raw_input("Please specify the filename:\n")
     no_inputs = int(raw_input("Please specify the number of inputs for the network: "))
-    training_set = build_in_out_map("test_cases/" + filename, no_inputs)
     no_layers = int(raw_input("Number of layers for Network: "))
     layers = []
     
     for i in range(no_layers):
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
-    
+
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
+    
+    filename = raw_input("Please specify the filename of the training set:\n")
+    training_set = build_in_out_map("grid/" + filename, no_inputs)
     mlp1 = train_network_online(mlp1, 0.05, 0.3, 10000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
        
     testname = raw_input("Please specify the filename of the test set:\n")
     while testname:
-        test_set = build_in_out_map('test_cases/' + testname, no_inputs)
+        test_set = build_in_out_map('grid/' + testname, no_inputs)
         run_test_set(mlp1, test_set) # run the test set through the trained MLP
         testname = raw_input("Please specify the filename of the test set:\n")
     
