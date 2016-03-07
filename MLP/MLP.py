@@ -201,7 +201,6 @@ class Output_Layer(Neuron_Layer):
                 current_node.out_error = (current_exp - current_act) * (1 - current_act**2)  
                 
             network_error += self.neurons[i].out_error**2 / len(self.neurons)
-            #print "error", self.neurons[i].out_error
             
         return network_error
             
@@ -213,12 +212,12 @@ class Output_Layer(Neuron_Layer):
 #===============================================================================
 class Neuron:
     
-    def __init__(self, no_connections):
+    def __init__(self, no_connections, activation="tanh"):
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
         self.init_weights(-2, 2)
-        self.function = self.assignActivation("tanh") # null function by default
+        self.function = self.assignActivation(activation) # null function by default
         self.node_out = None
         
     # init_weights: initialize weights between two reasonable boundaries (i.e. between -5 and 5 at most)
@@ -283,7 +282,7 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.003:
+        if avg_error < 0.001:
             break
         
         print avg_error

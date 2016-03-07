@@ -21,21 +21,15 @@ def dtanh(x):
 def nullFunc(x):
     return 0
 
-def signum(x):
-    if x < 0:
-        return 0
-    else: 
-        return 1
+def biasFunc(x):
+    return 0.1
     
 def sine(x):
     return math.sin(x)
     
-def threshold(x):
-    print
-    
 # getFunc: returns the function associated with the func_name provided
 def getFunc(func_name):
-    functions = [sigmoid, tanh, nullFunc, signum, threshold, sine]
+    functions = [sigmoid, tanh, nullFunc, biasFunc, sine]
     for func in functions:
         if func.__name__ == func_name:
             return func
