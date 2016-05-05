@@ -212,7 +212,7 @@ class Output_Layer(Neuron_Layer):
 #===============================================================================
 class Neuron:
     
-    def __init__(self, no_connections, activation="tanh"):
+    def __init__(self, no_connections, activation="sigmoid"):
         
         self.weights = [0] * no_connections # stores the weight value of each incoming connection
         self.deltas = [0] * no_connections
@@ -254,6 +254,19 @@ class Neuron:
     def __repr__(self):
         
         return "Neuron: " + str(self.weights) + " Output: " + str(self.node_out) + " Function:" + str(self.function)
+
+#===========================================================================
+# prints the classification of a 4-part vector
+#===========================================================================
+def print_classification(vector):
+    
+    classed = 0
+    for item in range(1,len(vector)):
+        if(vector[item] > vector[classed]):
+            classed = item;
+    
+    return classed+1
+            
     
 #===========================================================================
 # train_network_online: main method of the class regarding online learning (example-by-example network updating)
@@ -282,7 +295,7 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
         for error in net_errors:
             avg_error += (abs(error) / len(net_errors))
             
-        if avg_error < 0.001:
+        if avg_error < 0.0001:
             break
         
         print avg_error
@@ -291,8 +304,10 @@ def train_network_online(mlp, learn_rate, mom_fact, no_epochs, in_out_map):
         
     print "MLP has completed training"
     print "Average error: " + str(avg_error) 
-    print net_outputs
     
+    """for i in range(len(net_outputs)):
+        print i, net_outputs[i]
+    """
     return mlp # return the newly trained MLP
 
 def run_test_set(mlp, test_set):
@@ -310,10 +325,12 @@ def run_test_set(mlp, test_set):
     avg_error = 0
         
     for error in net_errors:
+        #print error
         avg_error += (abs(error) / len(net_errors))
         
     print avg_error
-    print net_outputs
+    for i in range(len(net_outputs)):
+        print i+1, net_outputs[i], print_classification(net_outputs[i])
 
 #===============================================================================
 # build_in_out_map
@@ -347,16 +364,18 @@ def main():
     
     for i in range(no_layers):
         layers.append(int(raw_input("Width of layer " + str(i) + ": ")))
-
+        
     mlp1 = MLP(no_inputs, layers) # construct a new MLP which takes 1 input  
     
     filename = raw_input("Please specify the filename of the training set:\n")
-    training_set = build_in_out_map("grid/" + filename, no_inputs)
-    mlp1 = train_network_online(mlp1, 0.05, 0.3, 10000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
+    #training_set = build_in_out_map("grid/grid_2/cell_2_1/" + filename, no_inputs)
+    training_set = build_in_out_map("vector/" + filename, no_inputs)
+    mlp1 = train_network_online(mlp1, 0.05, 0.5, 100000, training_set) # MLP instance, learning rate, momentum factor, no.epochs
        
     testname = raw_input("Please specify the filename of the test set:\n")
     while testname:
-        test_set = build_in_out_map('grid/' + testname, no_inputs)
+        #test_set = build_in_out_map("grid/grid_2/cell_2_1/" + testname, no_inputs)
+        test_set = build_in_out_map("vector/" + testname, no_inputs)
         run_test_set(mlp1, test_set) # run the test set through the trained MLP
         testname = raw_input("Please specify the filename of the test set:\n")
     
